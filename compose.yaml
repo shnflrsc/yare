@@ -1,9 +1,122 @@
 services:
   postgres:
-    image: 'postgres:latest'
+    image: postgres:15-alpine
+    container_name: yare-postgres
+
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      POSTGRES_DB: yare
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+
     ports:
-      - '5432'
+      - "127.0.0.1:5432:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d yare"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+  ministack:
+    image: ministackorg/ministack:latest
+    container_name: yare-ministack
+
+    ports:
+      - "127.0.0.1:4566:4566"
+
+    environment:
+      GATEWAY_PORT: 4566
+      LOG_LEVEL: INFO
+      S3_PERSIST: 1
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+    volumes:
+      - ministack-s3:/tmp/ministack-data/s3
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:4566/_ministack/health')"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: yare-ministack-redis
+
+    volumes:
+      - redis-data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+    restart: unless-stopped
+
+  ministack-init:
+    image: amazon/aws-cli:2
+
+    container_name: yare-ministack-init
+
+    depends_on:
+      ministack:
+        condition: service_healthy
+
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: ap-southeast-1
+
+    entrypoint: ["/bin/sh", "-c"]
+
+    command:
+      - |
+        set -e
+
+        echo "Checking S3 bucket..."
+
+        if aws --endpoint-url=http://ministack:4566 \
+          s3api head-bucket \
+          --bucket yare-files-uploads-dev-ap-southeast-1 2>/dev/null; then
+
+          echo "Bucket already exists."
+
+        else
+
+          echo "Creating bucket..."
+
+          aws --endpoint-url=http://ministack:4566 \
+            s3api create-bucket \
+            --bucket yare-files-uploads-dev-ap-southeast-1 \
+            --create-bucket-configuration LocationConstraint=ap-southeast-1
+
+          echo "Bucket created."
+
+        fi
+
+        echo "S3 initialization complete."
+
+volumes:
+  postgres-data:
+  ministack-s3:
+  redis-data:
