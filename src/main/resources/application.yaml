@@ -1,5 +1,7 @@
 spring:
   application:
     name: yare
+  profiles:
+    default: dev
   flyway:
     enabled: true
