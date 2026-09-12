@@ -1,5 +1,6 @@
 package io.shnflrsc.yare.service;
 
+import io.shnflrsc.yare.FileTooLargeException;
 import io.shnflrsc.yare.S3Properties;
 import io.shnflrsc.yare.model.File;
 import io.shnflrsc.yare.repository.FileRepository;
@@ -25,7 +26,11 @@ public class FileService {
         return fileRepository.findById(id);
     }
 
-    public String uploadFile(MultipartFile fileUpload) throws IOException {
+    public String uploadFile(MultipartFile fileUpload) throws FileTooLargeException, IOException {
+
+        if (fileUpload.getSize() > 100000000) {
+            throw new FileTooLargeException(fileUpload.getOriginalFilename());
+        }
 
         String key = fileUpload.getOriginalFilename();
 

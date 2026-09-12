@@ -1,7 +1,11 @@
 package io.shnflrsc.yare.controller;
 
+import io.shnflrsc.yare.RateLimitService;
 import io.shnflrsc.yare.model.File;
 import io.shnflrsc.yare.service.FileService;
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,20 +19,40 @@ import java.util.Optional;
 @RequestMapping("/files")
 public class FileController {
     private final FileService fileService;
+    private final RateLimitService rateLimitService;
 
-    public FileController(FileService fileService) {
+    public FileController(FileService fileService, RateLimitService rateLimitService) {
         this.fileService = fileService;
+        this.rateLimitService = rateLimitService;
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<File> getFile(@PathVariable Long id){
+    public ResponseEntity<File> getFile(HttpServletRequest request, @PathVariable Long id){
+        
+        String clientId = request.getRemoteAddr();
+
+        if (!rateLimitService.allowRequest(clientId)) {
+            return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .build();
+        }
+        
         Optional<File> file = fileService.findById(id);
 
         return file.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Void> uploadFile(@RequestParam MultipartFile fileUpload) {
+    public ResponseEntity<Void> uploadFile(HttpServletRequest request, @RequestParam MultipartFile fileUpload) {
+        
+        String clientId = request.getRemoteAddr();
+
+        if (!rateLimitService.allowRequest(clientId)) {
+            return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .build();
+        }
+
         try {
             String url = fileService.uploadFile(fileUpload);
 

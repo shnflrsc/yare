@@ -18,6 +18,7 @@ repositories {
 }
 
 dependencies {
+	implementation("com.bucket4j:bucket4j-core:8.10.1")
 	implementation(platform("software.amazon.awssdk:bom:2.48.0"))
 	implementation("software.amazon.awssdk:s3")
 	implementation("org.springframework.boot:spring-boot-starter-flyway")
