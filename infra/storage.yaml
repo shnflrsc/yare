@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Yare file upload storage
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: Name of the bucket used to store uploaded files
+
+Resources:
+  FilesBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref BucketName
+
+Outputs:
+  FilesBucketName:
+    Description: Bucket used by Yare for uploaded files
+    Value: !Ref FilesBucket

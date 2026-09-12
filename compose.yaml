@@ -73,10 +73,10 @@ services:
 
     restart: unless-stopped
 
-  ministack-init:
+  ministack-infra:
     image: amazon/aws-cli:2.36.44
 
-    container_name: yare-ministack-init
+    container_name: yare-ministack-infra
 
     depends_on:
       ministack:
@@ -87,34 +87,18 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
       AWS_DEFAULT_REGION: ${AWS_S3_REGION:-ap-southeast-1}
 
+    volumes:
+      - ./infra:/infra:ro
+
     entrypoint: ["/bin/sh", "-c"]
 
     command:
       - |
-        set -e
-
-        echo "Checking S3 bucket..."
-
-        if aws --endpoint-url=http://ministack:4566 \
-          s3api head-bucket \
-          --bucket ${AWS_S3_BUCKET:-yare-files-uploads-dev-ap-southeast-1} 2>/dev/null; then
-
-          echo "Bucket already exists."
-
-        else
-
-          echo "Creating bucket..."
-
-          aws --endpoint-url=http://ministack:4566 \
-            s3api create-bucket \
-          --bucket ${AWS_S3_BUCKET:-yare-files-uploads-dev-ap-southeast-1} \
-          --create-bucket-configuration LocationConstraint=${AWS_S3_REGION:-ap-southeast-1}
-
-          echo "Bucket created."
-
-        fi
-
-        echo "S3 initialization complete."
+        aws --endpoint-url=http://ministack:4566 cloudformation deploy \
+          --template-file /infra/storage.yaml \
+          --stack-name yare-storage \
+          --parameter-overrides BucketName=${AWS_S3_BUCKET:-yare-files-uploads-dev-ap-southeast-1} \
+          --no-fail-on-empty-changeset
 
 volumes:
   postgres-data:
