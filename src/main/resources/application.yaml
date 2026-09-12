@@ -1,18 +1,5 @@
 spring:
   application:
     name: yare
-  datasource:
-    url: jdbc:postgresql://localhost:5432/yare
-    username: admin
-    password: password
-
   flyway:
     enabled: true
-
-aws:
-  s3:
-    endpoint: ${AWS_S3_ENDPOINT:http://localhost:4566}
-    region: ${AWS_S3_REGION:ap-southeast-1}
-    bucket: ${AWS_S3_BUCKET:yare-files-uploads-dev-ap-southeast-1}
-    access-key: ${AWS_ACCESS_KEY_ID:test}
-    secret-key: ${AWS_SECRET_ACCESS_KEY:test}

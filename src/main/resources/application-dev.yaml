@@ -1,0 +1,18 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: jdbc:postgresql://localhost:${DATABASE_PORT:5432}/${DATABASE_NAME:yare}
+    username: ${DATABASE_USER:admin}
+    password: ${DATABASE_PASSWORD:password}
+
+  flyway:
+    enabled: true
+
+aws:
+  s3:
+    endpoint: ${AWS_S3_ENDPOINT:http://localhost:4566}
+    region: ${AWS_S3_REGION:ap-southeast-1}
+    bucket-name: ${AWS_S3_BUCKET:yare-files-uploads-dev-ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY_ID:test}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:test}

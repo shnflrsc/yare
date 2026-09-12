@@ -4,12 +4,12 @@ services:
     container_name: yare-postgres
 
     environment:
-      POSTGRES_DB: yare
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${DATABASE_NAME:-yare}
+      POSTGRES_USER: ${DATABASE_USER:-admin}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-password}
 
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DATABASE_PORT:-5432}:5432"
 
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -74,7 +74,7 @@ services:
     restart: unless-stopped
 
   ministack-init:
-    image: amazon/aws-cli:2
+    image: amazon/aws-cli:2.36.44
 
     container_name: yare-ministack-init
 
@@ -83,9 +83,9 @@ services:
         condition: service_healthy
 
     environment:
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
-      AWS_DEFAULT_REGION: ap-southeast-1
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_S3_REGION:-ap-southeast-1}
 
     entrypoint: ["/bin/sh", "-c"]
 
@@ -97,7 +97,7 @@ services:
 
         if aws --endpoint-url=http://ministack:4566 \
           s3api head-bucket \
-          --bucket yare-files-uploads-dev-ap-southeast-1 2>/dev/null; then
+          --bucket ${AWS_S3_BUCKET:-yare-files-uploads-dev-ap-southeast-1} 2>/dev/null; then
 
           echo "Bucket already exists."
 
@@ -107,8 +107,8 @@ services:
 
           aws --endpoint-url=http://ministack:4566 \
             s3api create-bucket \
-            --bucket yare-files-uploads-dev-ap-southeast-1 \
-            --create-bucket-configuration LocationConstraint=ap-southeast-1
+          --bucket ${AWS_S3_BUCKET:-yare-files-uploads-dev-ap-southeast-1} \
+          --create-bucket-configuration LocationConstraint=${AWS_S3_REGION:-ap-southeast-1}
 
           echo "Bucket created."
 

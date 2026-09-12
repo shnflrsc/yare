@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+
+aws:
+  s3:
+    endpoint: ${AWS_S3_ENDPOINT}
+    region: ${AWS_S3_REGION}
+    bucket-name: ${AWS_S3_BUCKET}
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}
