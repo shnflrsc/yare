@@ -22,7 +22,6 @@ public class FileService {
     private final FileRepository fileRepository;
 
     public Optional<File> findById(Long id) throws IllegalArgumentException {
-        fileRepository.findById(id);
         return fileRepository.findById(id);
     }
 
