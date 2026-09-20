@@ -1,11 +1,17 @@
 package io.shnflrsc.yare.controller;
 
+import io.shnflrsc.yare.FileTooLargeException;
 import io.shnflrsc.yare.RateLimitService;
 import io.shnflrsc.yare.model.File;
 import io.shnflrsc.yare.service.FileService;
 import jakarta.servlet.http.HttpServletRequest;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,6 +20,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+
+import io.shnflrsc.yare.dto.FileResponseDto;
 
 @RestController
 @RequestMapping("/files")
@@ -43,7 +51,7 @@ public class FileController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> uploadFile(HttpServletRequest request, @RequestParam MultipartFile fileUpload) {
+    public ResponseEntity<FileResponseDto> uploadFile(HttpServletRequest request, @RequestParam MultipartFile fileUpload) {
         
         String clientId = request.getRemoteAddr();
 
@@ -54,21 +62,44 @@ public class FileController {
         }
 
         try {
+            String fileName = fileUpload.getOriginalFilename();
             String url = fileService.uploadFile(fileUpload);
-
-            File fileRecord = new File();
-
-            fileRecord.setFileName(fileUpload.getOriginalFilename());
-            fileRecord.setFileUrl(url);
-            fileRecord.setExpiresAt(Instant.now().plus(Duration.ofHours(24)));
-
-            fileService.createFileRecord(fileRecord);
-
-            return ResponseEntity.ok().build();
+            Instant expiresAt = Instant.now().plus(Duration.ofHours(24));
+            
+            FileResponseDto dto = new FileResponseDto(
+                fileName,
+                url,
+                expiresAt
+            );
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
         } catch (IOException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.internalServerError().build();
+        } catch (FileTooLargeException e) {
+            return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).build();
         }
     }
-}
+
+    @GetMapping("/{id}/download")
+    public ResponseEntity<InputStreamResource> downloadFile(
+        @PathVariable Long id
+    ) {
+        ResponseInputStream<GetObjectResponse> inputStream =
+            fileService.downloadFile(id);
+
+        GetObjectResponse response = inputStream.response();
+
+        Optional<File> file = fileService.findById(id);
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(response.contentType()))
+            .contentLength(response.contentLength())
+            .header(
+                HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + file.get().getFileName() + "\""
+            )
+            .body(new InputStreamResource(inputStream));
+    }
+} 

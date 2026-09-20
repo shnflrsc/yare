@@ -24,6 +24,9 @@ public class File {
     @Column(name = "file_name", nullable = false)
     private String fileName;
 
+    @Column(name = "objcet_key", nullable = false)
+    private String objectKey;
+
     @Column(name = "file_url", nullable = false)
     private String fileUrl;
 
