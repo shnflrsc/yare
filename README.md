@@ -104,11 +104,6 @@ flowchart TD
     MINISTACK -->|"Provisions & Serves"| S3_BUCKET
     REDIS -->|"Mounts"| REDIS_DATA
 ```
-
-Pre-rendered architecture exports are available in the repository root:
-- [yare-architecture.png](yare-architecture.png) (High-resolution raster)
-- [yare-architecture.svg](yare-architecture.svg) (Lossless vector)
-
 ---
 
 ## Technologies Used
